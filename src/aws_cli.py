@@ -15,7 +15,8 @@ class AWSCLI:
         print(
             "Welcome to the AWS CLI - powered by the boto3 package!\n"
             'Type in a service name, i.e. "s3" to get metadata about it!\n'
-            'For specific information, try typing something like "ec2.instances"\n'
+            'For all information about a resource and specific collections, try typing something like "dynamodb.tables"\n'
+            'For specific resource+collection+fields, try typing "ec2.instances.BlockDeviceMappings.Ebs.VolumeId"\n'
             'Type "exit", or Ctrl+C to quit\n'
         )
         while True:

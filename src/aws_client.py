@@ -65,16 +65,16 @@ class AWSClient:
         resource: ServiceResource,
         resource_name: str,
         collection_name: str,
-        fields: list[str],
+        specific_fields: list[str] = [],
     ) -> None:
         try:
             instance_metadata = {}
             for service_instance in getattr(resource, collection_name).all():
                 try:
                     metadata = service_instance.meta.data
-                    if fields:
+                    if specific_fields:
                         info = {}
-                        get_nested_fields(info, metadata, fields)
+                        get_nested_fields(info, metadata, specific_fields)
                     else:
                         info = metadata
                     instance_metadata[service_instance.id] = info
@@ -108,6 +108,11 @@ class AWSClient:
         collection_name = None
         if user_fields:
             collection_name = user_fields.pop(0)
+        else:
+            log(
+                f"Not specifying any fields may take a while to generate a reponse for!",
+                "WARNING",
+            )
 
         resource_metadata = {}
 
@@ -118,7 +123,7 @@ class AWSClient:
                     resource=resource,
                     resource_name=resource_name,
                     collection_name=collection_name,
-                    fields=user_fields,
+                    specific_fields=user_fields,
                 )
             else:
                 collections = [
