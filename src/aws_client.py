@@ -3,8 +3,9 @@ from boto3.exceptions import ResourceNotExistsError
 from botocore.exceptions import ClientError
 from boto3.resources.base import ServiceResource
 import os
-import pprint
+import json
 
+from utils import get_nested_fields
 from logger import log
 from exceptions import MissingCredentialsError, InvalidCredentialsError
 
@@ -51,28 +52,70 @@ class AWSClient:
     def get_resource_collections(resource: ServiceResource) -> list[str]:
         return [collection.name for collection in resource.meta.resource_model.collections]
     
-    def display_metadata(self, user_input: str) -> None:
-        resource_name = user_input.split(".")[0]
+    @staticmethod
+    def get_resource_metadata_from_collection(
+        resource_metadata: dict,
+        resource: ServiceResource,
+        resource_name: str,
+        collection_name: str,
+        fields: list[str],
+    ) -> None:
+        try:
+            instance_metadata = {}
+            for service_instance in getattr(resource, collection_name).all():
+                try:
+                    metadata = service_instance.meta.data
+                    if fields:
+                        info = {}
+                        get_nested_fields(info, metadata, fields)
+                    else:
+                        info = metadata
+                    instance_metadata[service_instance.id] = info
+                except AttributeError as _err:
+                    log(f"{resource_name}.{collection_name} does not have an instance of id", "WARNING")
+                resource_metadata[collection_name] = instance_metadata
+        except AttributeError as _err:
+            log(f"resouce \"{resource_name}\", does not have collection: \"{collection_name}\"", "ERROR")
+            raise _err
+        except ClientError as _err:
+            log(f"IAM user does not have permission to view \"{resource_name}\" instances!", "ERROR")
+            raise _err
 
+    def display_metadata(self, user_input: str) -> None:
+        user_fields = user_input.split(".")
+
+        resource_name = user_fields.pop(0)
         resource = self.get_resource(resource_name)
         if resource == None:
             return
+
+        collection_name = None
+        if user_fields:
+            collection_name = user_fields.pop(0)
         
         resource_metadata = {}
-
-        collections = [collection.name for collection in resource.meta.resource_model.collections]
         
-        for collection_name in collections:
-            try:
-                instance_metadata = {}
-                for service_instance in getattr(resource, collection_name).all():
-                    try:
-                        instance_metadata[service_instance.id] = service_instance.meta.data
-                    except AttributeError as _err:
-                        log(f"{resource_name}.{collection_name} does not have an instance of id", "WARNING")
-                resource_metadata[collection_name] = instance_metadata
-            except ClientError:
-                log(f"IAM user does not have permission to view \"{resource_name}\" instances!", "ERROR")
-                return
-        
-        pprint.pprint(resource_metadata)
+        try:
+            if collection_name:
+                self.get_resource_metadata_from_collection(
+                    resource_metadata=resource_metadata,
+                    resource=resource,
+                    resource_name=resource_name,
+                    collection_name=collection_name,
+                    fields=user_fields,
+                )
+            else:
+                collections = [collection.name for collection in resource.meta.resource_model.collections]
+                for collection_name in collections:
+                    self.get_resource_metadata_from_collection(
+                        resource_metadata=resource_metadata,
+                        resource=resource,
+                        resource_name=resource_name,
+                        collection_name=collection_name,
+                    )
+            print(json.dumps(resource_metadata, indent=4, default=str))
+        except (
+            ClientError,
+            AttributeError,
+        ):
+            pass
