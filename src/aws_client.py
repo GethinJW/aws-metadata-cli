@@ -1,7 +1,9 @@
 import boto3
 from boto3.exceptions import ResourceNotExistsError
+from botocore.exceptions import ClientError
 from boto3.resources.base import ServiceResource
 import os
+import pprint
 
 from logger import log
 from exceptions import MissingCredentialsError, InvalidCredentialsError
@@ -44,3 +46,33 @@ class AWSClient:
             return
         except Exception as _err:
             raise InvalidCredentialsError()
+    
+    @staticmethod
+    def get_resource_collections(resource: ServiceResource) -> list[str]:
+        return [collection.name for collection in resource.meta.resource_model.collections]
+    
+    def display_metadata(self, user_input: str) -> None:
+        resource_name = user_input.split(".")[0]
+
+        resource = self.get_resource(resource_name)
+        if resource == None:
+            return
+        
+        resource_metadata = {}
+
+        collections = [collection.name for collection in resource.meta.resource_model.collections]
+        
+        for collection_name in collections:
+            try:
+                instance_metadata = {}
+                for service_instance in getattr(resource, collection_name).all():
+                    try:
+                        instance_metadata[service_instance.id] = service_instance.meta.data
+                    except AttributeError as _err:
+                        log(f"{resource_name}.{collection_name} does not have an instance of id", "WARNING")
+                resource_metadata[collection_name] = instance_metadata
+            except ClientError:
+                log(f"IAM user does not have permission to view \"{resource_name}\" instances!", "ERROR")
+                return
+        
+        pprint.pprint(resource_metadata)

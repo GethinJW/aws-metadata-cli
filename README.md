@@ -3,7 +3,7 @@
 # Requirements
 
 You will need the following to run this program:
-- Python
+- Python3.11
 - Pre-preppared IAM user account
 
 # Build the program

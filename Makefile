@@ -15,4 +15,5 @@ deps:
 
 .PHONY: run
 run: deps
+	. ./$(VENV_PATH)/bin/activate && \
 	python src/main.py
