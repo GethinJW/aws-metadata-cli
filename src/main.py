@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 
-from aws_client import AWSClient
 from aws_cli import AWSCLI
+from aws_client import AWSClient
 
 load_dotenv()
 

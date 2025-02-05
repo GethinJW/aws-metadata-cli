@@ -1,13 +1,15 @@
+import json
+import os
+
 import boto3
 from boto3.exceptions import ResourceNotExistsError
-from botocore.exceptions import ClientError
 from boto3.resources.base import ServiceResource
-import os
-import json
+from botocore.exceptions import ClientError
 
-from utils import get_nested_fields
+from exceptions import InvalidCredentialsError, MissingCredentialsError
 from logger import log
-from exceptions import MissingCredentialsError, InvalidCredentialsError
+from utils import get_nested_fields
+
 
 class AWSClient:
     __aws_region_name: str
@@ -18,7 +20,10 @@ class AWSClient:
         # setup region - can default to "eu-west-1"
         _aws_region_name = os.getenv("AWS_REGION", None)
         if not _aws_region_name:
-            log("AWS_REGION env var is not set, defaulting to \"eu-west-1\"", logType="WARNING")
+            log(
+                'AWS_REGION env var is not set, defaulting to "eu-west-1"',
+                logType="WARNING",
+            )
             _aws_region_name = "eu-west-1"
         self.__aws_region_name = _aws_region_name
 
@@ -33,7 +38,7 @@ class AWSClient:
         if not _aws_secret_access_key:
             raise MissingCredentialsError("Must set AWS_SECRET_ACCESS_KEY env var")
         self.__aws_secret_access_key = _aws_secret_access_key
-    
+
     def get_resource(self, resource_name: str) -> ServiceResource | None:
         try:
             return boto3.resource(
@@ -43,15 +48,17 @@ class AWSClient:
                 aws_secret_access_key=self.__aws_secret_access_key,
             )
         except ResourceNotExistsError:
-            log(f"Resource - \"{resource_name}\", does not exist", "WARNING")
+            log(f'Resource - "{resource_name}", does not exist', "WARNING")
             return
         except Exception as _err:
             raise InvalidCredentialsError()
-    
+
     @staticmethod
     def get_resource_collections(resource: ServiceResource) -> list[str]:
-        return [collection.name for collection in resource.meta.resource_model.collections]
-    
+        return [
+            collection.name for collection in resource.meta.resource_model.collections
+        ]
+
     @staticmethod
     def get_resource_metadata_from_collection(
         resource_metadata: dict,
@@ -72,13 +79,22 @@ class AWSClient:
                         info = metadata
                     instance_metadata[service_instance.id] = info
                 except AttributeError as _err:
-                    log(f"{resource_name}.{collection_name} does not have an instance of id", "WARNING")
+                    log(
+                        f"{resource_name}.{collection_name} does not have an instance of id",
+                        "WARNING",
+                    )
                 resource_metadata[collection_name] = instance_metadata
         except AttributeError as _err:
-            log(f"resouce \"{resource_name}\", does not have collection: \"{collection_name}\"", "ERROR")
+            log(
+                f'resouce "{resource_name}", does not have collection: "{collection_name}"',
+                "ERROR",
+            )
             raise _err
         except ClientError as _err:
-            log(f"IAM user does not have permission to view \"{resource_name}\" instances!", "ERROR")
+            log(
+                f'IAM user does not have permission to view "{resource_name}" instances!',
+                "ERROR",
+            )
             raise _err
 
     def display_metadata(self, user_input: str) -> None:
@@ -92,9 +108,9 @@ class AWSClient:
         collection_name = None
         if user_fields:
             collection_name = user_fields.pop(0)
-        
+
         resource_metadata = {}
-        
+
         try:
             if collection_name:
                 self.get_resource_metadata_from_collection(
@@ -105,7 +121,10 @@ class AWSClient:
                     fields=user_fields,
                 )
             else:
-                collections = [collection.name for collection in resource.meta.resource_model.collections]
+                collections = [
+                    collection.name
+                    for collection in resource.meta.resource_model.collections
+                ]
                 for collection_name in collections:
                     self.get_resource_metadata_from_collection(
                         resource_metadata=resource_metadata,

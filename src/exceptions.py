@@ -5,5 +5,10 @@ class GenericError(Exception):
         self.msg = msg
         super()
 
-class MissingCredentialsError(GenericError): pass
-class InvalidCredentialsError(GenericError): pass
+
+class MissingCredentialsError(GenericError):
+    pass
+
+
+class InvalidCredentialsError(GenericError):
+    pass

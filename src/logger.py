@@ -1,5 +1,6 @@
 from termcolor import colored
 
+
 def log(msg: str, logType="INFO") -> None:
     match logType:
         case "WARNING":
