@@ -11,11 +11,7 @@ def get_nested_fields(ret_info: dict, _dict: dict, fields: list[str]):
         value = _dict[field_name]
 
         if not fields:
-            ret_info[field_name] = (
-                {fields[-1]: value[fields[-1]]}
-                if isinstance(value, dict) and fields[-1] in value
-                else value
-            )
+            ret_info[field_name] = value
             return ret_info
 
         if isinstance(value, list):
