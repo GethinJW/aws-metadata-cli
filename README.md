@@ -13,6 +13,20 @@ build the program with:
 make build
 ```
 
+# Setup Env vars
+
+Run the command:
+```bash
+cp .env.copy .env
+```
+
+and fill out the appropriate values using an AWS IAM account
+```
+AWS_ACCESS_KEY_ID="<AWS ACCESS KEY>"
+AWS_SECRET_ACCESS_KEY="<AWS SECRET ACCESS KEY>"
+AWS_REGION="<AWS REGION>"
+```
+
 # Run the program
 
 run the cli with:
