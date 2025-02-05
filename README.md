@@ -33,3 +33,7 @@ run the cli with:
 ``` bash
 make run
 ```
+
+## Example Usage:
+See the following example:
+![example](./assets/example.png)
